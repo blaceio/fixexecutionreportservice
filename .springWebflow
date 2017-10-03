@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<webflow-project-description>
+	<version>1</version>
+	<pluginVersion><![CDATA[3.9.0.201707061730-RELEASE]]></pluginVersion>
+	<configs>
+		<config>
+			<file>src/main/resources/spring/integration/test.xml</file>
+			<name><![CDATA[test]]></name>
+		</config>
+		<config>
+			<file>src/main/resources/spring/integration/test.xml</file>
+			<name><![CDATA[test]]></name>
+		</config>
+		<config>
+			<file>src/main/resources/spring/integration/test.xml</file>
+			<name><![CDATA[test]]></name>
+		</config>
+	</configs>
+</webflow-project-description>
