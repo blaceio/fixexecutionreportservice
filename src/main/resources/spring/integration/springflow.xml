@@ -8,15 +8,47 @@
 		http://www.springframework.org/schema/integration/spring-integration.xsd">
 	
 	<int:channel id="fixchannel"/>
+	<int:channel id="orderchannel"/>
+	<int:channel id="flextradeorderchannel"/>
+	<int:channel id="createorderchannel"/>
+	<int:channel id="createunmatchedorderchannel"/>
+	<int:channel id="creatematchedorderchannel"/>
 
 	<int:gateway id="fixgateway" service-interface="io.blace.microservices.fixexecutionreportservice.integration.gateway.FIXGateway" default-request-channel="fixchannel"/>
 	
 	<bean id="erService" class="io.blace.microservices.fixexecutionreportservice.integration.services.ERService"/>
 	<bean id="erTransform" class="io.blace.microservices.fixexecutionreportservice.integration.transformers.ERTransformer"/>
-	
-	<int:chain id="fixchain" input-channel="fixchannel" output-channel="nullChannel">
+	<bean id="orderService" class="io.blace.microservices.fixexecutionreportservice.integration.services.OrderService"/>
+	<bean id="orderTransform" class="io.blace.microservices.fixexecutionreportservice.integration.transformers.OrderTransformer"/>
+		
+	<int:chain id="fixchain" input-channel="fixchannel" output-channel="orderchannel">
 		<int:service-activator ref="erTransform" method="fixtoer"/>
 		<int:service-activator ref="erService" method="savetomongo"/>
+	</int:chain>
+
+	<int:header-value-router input-channel="orderchannel" header-name="source" default-output-channel="nullChannel" resolution-required="false">
+  		<int:mapping value="FlexTrade" channel="flextradeorderchannel" />
+	</int:header-value-router>
+	
+	<int:header-value-router input-channel="flextradeorderchannel" header-name="ordstatus">
+  		<int:mapping value="Filled" channel="createorderchannel" />
+  		<int:mapping value="Partially filled" channel="nullChannel" />
+	</int:header-value-router>
+
+	<int:header-value-router input-channel="createorderchannel" header-name="client" default-output-channel="creatematchedorderchannel" resolution-required="false">
+  		<int:mapping value="CURVE" channel="createunmatchedorderchannel" />
+	</int:header-value-router>
+	
+	<int:chain id="matchedchain" input-channel="creatematchedorderchannel" output-channel="nullChannel">
+		<int:service-activator ref="orderTransform" method="getallfills"/>
+		<int:service-activator ref="orderTransform" method="ertomatchedorder"/>
+		<int:service-activator ref="orderService" method="savetomongo"/>
+	</int:chain>
+	
+	<int:chain id="unmatchedchain" input-channel="createunmatchedorderchannel" output-channel="nullChannel">
+		<int:service-activator ref="orderTransform" method="getallfills"/>
+		<int:service-activator ref="orderTransform" method="ertounmatchedorder"/>
+		<int:service-activator ref="orderService" method="savetomongo"/>
 	</int:chain>
 	
  </beans>

@@ -25,6 +25,7 @@ public class ERTransformer {
 				.withPayload(fixexecreport)
 				.setHeader("source", fixexecreport.getSourceSystem())
 				.setHeader("ordstatus", fixexecreport.getOrdStatus())
+				.setHeader("client",fixexecreport.getDeliverToCompID())
 				.build();
 	}
 }

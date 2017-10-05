@@ -18,8 +18,7 @@ public class ERService {
 	private FIXExecutionReportRepository mongorepo;
 	
 	public Message<FIXExecutionReport> savetomongo(Message<FIXExecutionReport> execreport) {
-		FIXExecutionReport _execreport = (FIXExecutionReport) execreport.getPayload();
-		mongorepo.insert(_execreport);
+		mongorepo.insert(execreport.getPayload());
 		logger.info("Saved to Mongo: " + execreport.getPayload().getOrderID());
 		return execreport;
 	}

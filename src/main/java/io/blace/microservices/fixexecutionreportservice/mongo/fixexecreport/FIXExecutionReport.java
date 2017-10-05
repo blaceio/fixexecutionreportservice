@@ -63,6 +63,46 @@ public class FIXExecutionReport {
 		
 	}
 	
+	public FIXExecutionReport(FIXExecutionReport er) {
+		setAccount(er.getAccount());
+		setSymbol(er.getSymbol());
+		setAvgPx(er.getAvgPx());
+		setClOrdID(er.getClOrdID());
+		setCumQty(er.getCumQty());
+		setCurrency(er.getCurrency());
+		setExecID(er.getExecID());
+		setLastPx(er.getLastPx());
+		setLastQty(er.getLastQty());
+		setOrderID(er.getOrderID());
+		setOrderQty(er.getOrderQty());
+		setOrdStatus(er.getOrdStatus());
+		setOrdType(er.getOrdType());
+		setPrice(er.getPrice());
+		setSide(er.getSide());
+		setTimeInForce(er.getTimeInForce());
+		setTransactTime(er.getTransactTime());
+		setSettlDate(er.getSettlDate());
+		setListID(er.getListID());
+		setTradeDate(er.getTradeDate());
+		setExecType(er.getExecType());
+		setLeavesQty(er.getLeavesQty());
+		setEffectiveTime(er.getEffectiveTime());
+		setNoContraBrokers(er.getNoContraBrokers());
+		setSecondaryExecID(er.getSecondaryExecID());
+		setPartyID(er.getPartyID());
+		setContraBroker(er.getContraBroker());
+		setSourceSystem(er.getSourceSystem());
+		setSenderCompID(er.getSenderCompID());
+		setTargetCompID(er.getTargetCompID());
+		setDeliverToCompID(er.getDeliverToCompID());
+		setDeliverToSubID(er.getDeliverToSubID());
+		setSenderLocationID(er.getSenderLocationID());
+		setSendingTime(er.getSendingTime());
+		setLastCapacity(er.getLastCapacity());
+		setSecurityType(er.getSecurityType());
+		setFlexMarketPrice(er.getFlexMarketPrice());		
+	}
+	
 	public FIXExecutionReport(ExecutionReport er) throws FieldNotFound {
 		setAccount(er);
 		setSymbol(er);
