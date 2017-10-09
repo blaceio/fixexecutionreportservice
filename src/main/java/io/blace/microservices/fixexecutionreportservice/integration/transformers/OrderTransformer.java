@@ -25,63 +25,49 @@ public class OrderTransformer {
 	@Autowired
 	private FIXExecutionReportRepository fixrepo;
 	
-	public Message<FIXExecutionReport> getallfills(Message<FIXExecutionReport> execreport) {
-		
+	public Message<List<FIXExecutionReport>> getallfills(Message<FIXExecutionReport> execreport) {
+	
 		FIXExecutionReport _execreport = (FIXExecutionReport) execreport.getPayload();
-		
+	
 		List<FIXExecutionReport> _execreports = fixrepo.findAllByOrderIDAndTradeDate(_execreport.getOrderID(), _execreport.getTradeDate());
-		
-		double avgSettlePrice = 0.;
-		for( FIXExecutionReport report : _execreports ) {
-			avgSettlePrice += report.getLastQty() * report.getFlexMarketPrice();
-		}
-		avgSettlePrice /= _execreport.getOrderQty();
-		
-		FIXExecutionReport orderreport = new FIXExecutionReport(_execreport);
-		orderreport.setFlexMarketPrice(avgSettlePrice);
-		
-		logger.info("Transformed to: " + orderreport.toString());
-		
+	
 		return MessageBuilder
-				.withPayload(orderreport)
-				.build();
+			.withPayload(_execreports)
+			.copyHeaders(execreport.getHeaders())
+			.build();
 	}
 	
-	public Message<CurveOrder> ertomatchedorder(Message<FIXExecutionReport> execreport) throws ParseException {
+	public Message<CurveOrder> ertomatchedorder(Message<List<FIXExecutionReport>> execreports) throws ParseException {
 		
-		FIXExecutionReport _execreport = (FIXExecutionReport) execreport.getPayload();
+		List<FIXExecutionReport> _execreports = (List<FIXExecutionReport>) execreports.getPayload();
+		
+		FIXExecutionReport _execreport = _execreports.get(0);
 		
 		Order curve = new Order();
 		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
-		curve.setCcy(_execreport.getCurrency());
-		curve.setClient(_execreport.getDeliverToCompID());
 		curve.setClientsent(true);
-		curve.setNotional(_execreport.getOrderQty());
 		curve.setPbsent(true);
-		curve.setPrice(_execreport.getFlexMarketPrice());
-		curve.setTradedate(_execreport.getTradeDate());
-		curve.setTrader(_execreport.getDeliverToSubID());
-		curve.setType(_execreport.getSecurityType());
-		curve.setValuedate(_execreport.getSettlDate());
+		curve.setFixexecutions(_execreports);
 		
 		Order client = new Order();
 		client.setBuy(_execreport.getSide().equals("Sell") ? true : false);
-		client.setCcy(_execreport.getCurrency());
-		client.setClient(_execreport.getDeliverToCompID());
 		client.setClientsent(true);
-		client.setNotional(_execreport.getOrderQty());
 		client.setPbsent(true);
 		client.setPrice(_execreport.getAvgPx());
-		client.setTradedate(_execreport.getTradeDate());
-		client.setTrader(_execreport.getDeliverToSubID());
-		client.setType(_execreport.getSecurityType());
-		client.setValuedate(_execreport.getSettlDate());
+		client.setFixexecutions(_execreports);
 		
 		CurveOrder curveorder = new CurveOrder();
 		curveorder.setOrderid(_execreport.getOrderID());
 		curveorder.setLegs(new ArrayList<Order>(Arrays.asList(curve, client)));
 		curveorder.setMatched(true);
 		curveorder.setPair(_execreport.getSymbol());
+		curveorder.setClient(_execreport.getDeliverToCompID());
+		curveorder.setQuantity(_execreport.getOrderQty());
+		curveorder.setCcy(_execreport.getCurrency());
+		curveorder.setTradedate(_execreport.getTradeDate());
+		curveorder.setTrader(_execreport.getDeliverToSubID());
+		curveorder.setType(_execreport.getSecurityType());
+		curveorder.setValuedate(_execreport.getSettlDate());
 		
 		logger.info("Transformed to: " + curveorder.toString());
 		
@@ -91,29 +77,48 @@ public class OrderTransformer {
 				.build();
 	}
 	
-	public Message<CurveOrder> ertounmatchedorder(Message<List<FIXExecutionReport>> execreport) throws ParseException {
+	public Message<CurveOrder> updateflexprice(Message<CurveOrder> curveorder) {
 		
-		FIXExecutionReport _execreport = (FIXExecutionReport) execreport.getPayload();
+		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
+		
+		double avgSettlePrice = 0.;
+		for( FIXExecutionReport report : _curveorder.getLegs().get(0).getFixexecutions() ) {
+			avgSettlePrice += report.getLastQty() * report.getFlexMarketPrice();
+		}
+		avgSettlePrice /= _curveorder.getQuantity();
+		
+		_curveorder.getLegs().get(0).setPrice(avgSettlePrice);
+		
+		return MessageBuilder
+				.withPayload(_curveorder)
+				.copyHeaders(curveorder.getHeaders())
+				.build();
+	}
+	
+	public Message<CurveOrder> ertounmatchedorder(Message<List<FIXExecutionReport>> execreports) throws ParseException {
+		
+		List<FIXExecutionReport> _execreports = (List<FIXExecutionReport>) execreports.getPayload();
+		
+		FIXExecutionReport _execreport = _execreports.get(0);
 		
 		Order curve = new Order();
 		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
-		curve.setCcy(_execreport.getCurrency());
-		curve.setClient(_execreport.getDeliverToCompID());
 		curve.setClientsent(true);
-		curve.setNotional(_execreport.getOrderQty());
 		curve.setPbsent(true);
 		curve.setPrice(_execreport.getAvgPx());
-		curve.setTradedate(_execreport.getTradeDate());
-		curve.setTrader(_execreport.getDeliverToSubID());
-		curve.setType(_execreport.getSecurityType());
-		curve.setValuedate(_execreport.getSettlDate());
 		
 		CurveOrder curveorder = new CurveOrder();
 		curveorder.setOrderid(_execreport.getOrderID());
 		curveorder.setLegs(new ArrayList<Order>(Arrays.asList(curve)));
 		curveorder.setMatched(false);
-		
+		curveorder.setClient(_execreport.getDeliverToCompID());
 		curveorder.setPair(_execreport.getSymbol());
+		curveorder.setQuantity(_execreport.getOrderQty());
+		curveorder.setCcy(_execreport.getCurrency());
+		curveorder.setTradedate(_execreport.getTradeDate());
+		curveorder.setTrader(_execreport.getDeliverToSubID());
+		curveorder.setType(_execreport.getSecurityType());
+		curveorder.setValuedate(_execreport.getSettlDate());
 		
 		logger.info("Transformed to: " + curveorder.toString());
 		

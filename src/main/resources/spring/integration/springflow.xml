@@ -42,6 +42,7 @@
 	<int:chain id="matchedchain" input-channel="creatematchedorderchannel" output-channel="nullChannel">
 		<int:service-activator ref="orderTransform" method="getallfills"/>
 		<int:service-activator ref="orderTransform" method="ertomatchedorder"/>
+		<int:service-activator ref="orderTransform" method="updateflexprice"/>
 		<int:service-activator ref="orderService" method="savetomongo"/>
 	</int:chain>
 	
