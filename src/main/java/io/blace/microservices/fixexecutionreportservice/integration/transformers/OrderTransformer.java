@@ -1,8 +1,6 @@
 package io.blace.microservices.fixexecutionreportservice.integration.transformers;
 
 import java.text.ParseException;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 
 import org.slf4j.Logger;
@@ -37,29 +35,14 @@ public class OrderTransformer {
 			.build();
 	}
 	
-	public Message<CurveOrder> ertomatchedorder(Message<List<FIXExecutionReport>> execreports) throws ParseException {
+	public Message<CurveOrder> ertocurveorder(Message<List<FIXExecutionReport>> execreports) throws ParseException {
 		
 		List<FIXExecutionReport> _execreports = (List<FIXExecutionReport>) execreports.getPayload();
 		
 		FIXExecutionReport _execreport = _execreports.get(0);
 		
-		Order curve = new Order();
-		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
-		curve.setClientsent(true);
-		curve.setPbsent(true);
-		curve.setFixexecutions(_execreports);
-		
-		Order client = new Order();
-		client.setBuy(_execreport.getSide().equals("Sell") ? true : false);
-		client.setClientsent(true);
-		client.setPbsent(true);
-		client.setPrice(_execreport.getAvgPx());
-		client.setFixexecutions(_execreports);
-		
 		CurveOrder curveorder = new CurveOrder();
 		curveorder.setOrderid(_execreport.getOrderID());
-		curveorder.setLegs(new ArrayList<Order>(Arrays.asList(curve, client)));
-		curveorder.setMatched(true);
 		curveorder.setPair(_execreport.getSymbol());
 		curveorder.setClient(_execreport.getDeliverToCompID());
 		curveorder.setQuantity(_execreport.getOrderQty());
@@ -68,26 +51,29 @@ public class OrderTransformer {
 		curveorder.setTrader(_execreport.getDeliverToSubID());
 		curveorder.setType(_execreport.getSecurityType());
 		curveorder.setValuedate(_execreport.getSettlDate());
+		curveorder.setFixexecutions(_execreports);
 		
 		logger.info("Transformed to: " + curveorder.toString());
 		
 		return MessageBuilder
 				.withPayload(curveorder)
-				.setHeader("ismatched", "TRUE")
+				.setHeader("client",curveorder.getClient())
 				.build();
 	}
 	
-	public Message<CurveOrder> updateflexprice(Message<CurveOrder> curveorder) {
+	public Message<CurveOrder> addclientleg(Message<CurveOrder> curveorder) throws ParseException {
 		
 		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
 		
-		double avgSettlePrice = 0.;
-		for( FIXExecutionReport report : _curveorder.getLegs().get(0).getFixexecutions() ) {
-			avgSettlePrice += report.getLastQty() * report.getFlexMarketPrice();
-		}
-		avgSettlePrice /= _curveorder.getQuantity();
+		FIXExecutionReport _execreport = _curveorder.getFixexecutions().get(0);
 		
-		_curveorder.getLegs().get(0).setPrice(avgSettlePrice);
+		Order client = new Order();
+		client.setBuy(_execreport.getSide().equals("Sell") ? true : false);
+		client.setPrice(_execreport.getAvgPx());
+		
+		_curveorder.setClientleg(client);
+		
+		logger.info("Transformed to: " + _curveorder.toString());
 		
 		return MessageBuilder
 				.withPayload(_curveorder)
@@ -95,36 +81,73 @@ public class OrderTransformer {
 				.build();
 	}
 	
-	public Message<CurveOrder> ertounmatchedorder(Message<List<FIXExecutionReport>> execreports) throws ParseException {
+	public Message<CurveOrder> addcurveleg(Message<CurveOrder> curveorder) throws ParseException {
 		
-		List<FIXExecutionReport> _execreports = (List<FIXExecutionReport>) execreports.getPayload();
+		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
 		
-		FIXExecutionReport _execreport = _execreports.get(0);
+		FIXExecutionReport _execreport = _curveorder.getFixexecutions().get(0);
 		
 		Order curve = new Order();
 		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
-		curve.setClientsent(true);
-		curve.setPbsent(true);
-		curve.setPrice(_execreport.getAvgPx());
 		
-		CurveOrder curveorder = new CurveOrder();
-		curveorder.setOrderid(_execreport.getOrderID());
-		curveorder.setLegs(new ArrayList<Order>(Arrays.asList(curve)));
-		curveorder.setMatched(false);
-		curveorder.setClient(_execreport.getDeliverToCompID());
-		curveorder.setPair(_execreport.getSymbol());
-		curveorder.setQuantity(_execreport.getOrderQty());
-		curveorder.setCcy(_execreport.getCurrency());
-		curveorder.setTradedate(_execreport.getTradeDate());
-		curveorder.setTrader(_execreport.getDeliverToSubID());
-		curveorder.setType(_execreport.getSecurityType());
-		curveorder.setValuedate(_execreport.getSettlDate());
+		_curveorder.setExecleg(curve);
 		
-		logger.info("Transformed to: " + curveorder.toString());
+		logger.info("Transformed to: " + _curveorder.toString());
 		
 		return MessageBuilder
-				.withPayload(curveorder)
-				.setHeader("ismatched", "FALSE")
+				.withPayload(_curveorder)
+				.copyHeaders(curveorder.getHeaders())
 				.build();
 	}
+	
+	public Message<CurveOrder> addcurveexecleg(Message<CurveOrder> curveorder) throws ParseException {
+		
+		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
+		
+		FIXExecutionReport _execreport = _curveorder.getFixexecutions().get(0);
+		
+		Order curve = new Order();
+		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
+		curve.setPrice(_execreport.getAvgPx());
+		
+		_curveorder.setExecleg(curve);
+		
+		logger.info("Transformed to: " + _curveorder.toString());
+		
+		return MessageBuilder
+				.withPayload(_curveorder)
+				.copyHeaders(curveorder.getHeaders())
+				.build();
+	}
+	
+	public Message<CurveOrder> updateexecprice(Message<CurveOrder> curveorder) {
+		
+		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
+		
+		double avgSettlePrice = 0.;
+		for( FIXExecutionReport report : _curveorder.getFixexecutions() ) {
+			avgSettlePrice += report.getLastQty() * report.getFlexMarketPrice();
+		}
+		avgSettlePrice /= _curveorder.getQuantity();
+		
+		_curveorder.getExecleg().setPrice(avgSettlePrice);
+		
+		return MessageBuilder
+				.withPayload(_curveorder)
+				.copyHeaders(curveorder.getHeaders())
+				.build();
+	}
+	
+	public Message<CurveOrder> setmatched(Message<CurveOrder> curveorder) {
+		
+		CurveOrder _curveorder = (CurveOrder) curveorder.getPayload();
+		
+		_curveorder.setMatched(true);
+		
+		return MessageBuilder
+				.withPayload(_curveorder)
+				.copyHeaders(curveorder.getHeaders())
+				.build();
+	}
+	
 }

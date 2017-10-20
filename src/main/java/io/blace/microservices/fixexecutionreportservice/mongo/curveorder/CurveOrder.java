@@ -8,6 +8,8 @@ import java.util.List;
 
 import org.springframework.data.annotation.Id;
 
+import io.blace.microservices.fixexecutionreportservice.mongo.fixexecreport.FIXExecutionReport;
+
 public class CurveOrder {
 
 	@Id
@@ -23,11 +25,13 @@ public class CurveOrder {
 	private Date valuedate;
 	private String trader;
 	private String type;
-	private List<Order> legs;
+	private Order clientleg;
+	private Order execleg;
+	private List<FIXExecutionReport> fixexecutions;
 	
 	public CurveOrder() {
 		this.matched = false;
-		this.legs = new ArrayList<Order>();
+		this.fixexecutions = new ArrayList<FIXExecutionReport>();
 	}
 	
 	public String getId() {
@@ -42,26 +46,17 @@ public class CurveOrder {
 	public void setOrderid(String orderid) {
 		this.orderid = orderid;
 	}
-	
 	public String getPair() {
 		return pair;
 	}
-
 	public void setPair(String pair) {
 		this.pair = pair;
 	}
-
 	public boolean isMatched() {
 		return matched;
 	}
 	public void setMatched(boolean matched) {
 		this.matched = matched;
-	}
-	public List<Order> getLegs() {
-		return legs;
-	}
-	public void setLegs(List<Order> legs) {
-		this.legs = legs;
 	}
 	public Date getTradedate() {
 		return tradedate;
@@ -79,23 +74,18 @@ public class CurveOrder {
 	public void setClient(String client) {
 		this.client = client;
 	}
-
 	public double getQuantity() {
 		return quantity;
 	}
-
 	public void setQuantity(double quantity) {
 		this.quantity = quantity;
 	}
-
 	public String getCcy() {
 		return ccy;
 	}
-	
-		public Date getValuedate() {
+	public Date getValuedate() {
 		return valuedate;
 	}
-
 	public void setValuedate(Date valuedate) {
 		this.valuedate = valuedate;
 	}
@@ -103,35 +93,46 @@ public class CurveOrder {
 		SimpleDateFormat formatter = new SimpleDateFormat("yyyyMMdd");
 		 this.valuedate = formatter.parse(valuedate); 
 	}
-
 	public String getTrader() {
 		return trader;
 	}
-
 	public void setTrader(String trader) {
 		this.trader = trader;
 	}
-
 	public void setCcy(String ccy) {
 		this.ccy = ccy;
 	}
-
 	public String getType() {
 		return type;
 	}
-
 	public void setType(String type) {
 		this.type = type;
+	}
+	public List<FIXExecutionReport> getFixexecutions() {
+		return fixexecutions;
+	}
+	public void setFixexecutions(List<FIXExecutionReport> fixexecutions) {
+		this.fixexecutions = fixexecutions;
+	}
+	public Order getClientleg() {
+		return clientleg;
+	}
+	public void setClientleg(Order clientleg) {
+		this.clientleg = clientleg;
+	}
+	public Order getExecleg() {
+		return execleg;
+	}
+	public void setExecleg(Order execleg) {
+		this.execleg = execleg;
 	}
 
 	@Override
 	public String toString() {
 		return "CurveOrder [id=" + id + ", orderid=" + orderid + ", pair=" + pair + ", ccy=" + ccy + ", matched="
 				+ matched + ", tradedate=" + tradedate + ", client=" + client + ", quantity=" + quantity
-				+ ", valuedate=" + valuedate + ", trader=" + trader + ", type=" + type + ", legs=" + legs + "]";
+				+ ", valuedate=" + valuedate + ", trader=" + trader + ", type=" + type + ", clientleg=" + clientleg
+				+ ", ourleg=" + execleg + ", fixexecutions=" + fixexecutions + "]";
 	}
-	
-	
-
 	
 }

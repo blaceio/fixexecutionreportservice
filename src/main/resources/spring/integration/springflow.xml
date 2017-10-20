@@ -13,6 +13,7 @@
 	<int:channel id="createorderchannel"/>
 	<int:channel id="createunmatchedorderchannel"/>
 	<int:channel id="creatematchedorderchannel"/>
+	<int:channel id="checkclientchannel"/>
 
 	<int:gateway id="fixgateway" service-interface="io.blace.microservices.fixexecutionreportservice.integration.gateway.FIXGateway" default-request-channel="fixchannel"/>
 	
@@ -35,20 +36,25 @@
   		<int:mapping value="Partially filled" channel="nullChannel" />
 	</int:header-value-router>
 
-	<int:header-value-router input-channel="createorderchannel" header-name="client" default-output-channel="creatematchedorderchannel" resolution-required="false">
+	<int:chain id="createorderchain" input-channel="createorderchannel" output-channel="checkclientchannel">
+		<int:service-activator ref="orderTransform" method="getallfills"/>
+		<int:service-activator ref="orderTransform" method="ertocurveorder"/>
+	</int:chain>
+	
+	<int:header-value-router input-channel="checkclientchannel" header-name="client" default-output-channel="creatematchedorderchannel" resolution-required="false">
   		<int:mapping value="CURVE" channel="createunmatchedorderchannel" />
 	</int:header-value-router>
 	
 	<int:chain id="matchedchain" input-channel="creatematchedorderchannel" output-channel="nullChannel">
-		<int:service-activator ref="orderTransform" method="getallfills"/>
-		<int:service-activator ref="orderTransform" method="ertomatchedorder"/>
-		<int:service-activator ref="orderTransform" method="updateflexprice"/>
+		<int:service-activator ref="orderTransform" method="addclientleg"/>
+		<int:service-activator ref="orderTransform" method="addcurveleg"/>
+		<int:service-activator ref="orderTransform" method="updateexecprice"/>
+		<int:service-activator ref="orderTransform" method="setmatched"/>
 		<int:service-activator ref="orderService" method="savetomongo"/>
 	</int:chain>
 	
 	<int:chain id="unmatchedchain" input-channel="createunmatchedorderchannel" output-channel="nullChannel">
-		<int:service-activator ref="orderTransform" method="getallfills"/>
-		<int:service-activator ref="orderTransform" method="ertounmatchedorder"/>
+		<int:service-activator ref="orderTransform" method="addcurveexecleg"/>
 		<int:service-activator ref="orderService" method="savetomongo"/>
 	</int:chain>
 	
