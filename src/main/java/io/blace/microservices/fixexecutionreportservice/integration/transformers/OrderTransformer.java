@@ -47,7 +47,7 @@ public class OrderTransformer {
 		curveorder.setClient(_execreport.getDeliverToCompID());
 		curveorder.setQuantity(_execreport.getOrderQty());
 		curveorder.setCcy(_execreport.getCurrency());
-		curveorder.setTradedate(_execreport.getTradeDate());
+		curveorder.setTradedate(_execreport.getTransactTime());
 		curveorder.setTrader(_execreport.getDeliverToSubID());
 		curveorder.setType(_execreport.getSecurityType());
 		curveorder.setValuedate(_execreport.getSettlDate());
