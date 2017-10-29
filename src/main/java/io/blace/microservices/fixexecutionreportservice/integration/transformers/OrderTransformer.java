@@ -70,6 +70,7 @@ public class OrderTransformer {
 		Order client = new Order();
 		client.setBuy(_execreport.getSide().equals("Sell") ? true : false);
 		client.setPrice(_execreport.getAvgPx());
+		client.setCurveprice(_execreport.getAvgPx());
 		
 		_curveorder.setClientleg(client);
 		
@@ -109,6 +110,7 @@ public class OrderTransformer {
 		Order curve = new Order();
 		curve.setBuy(_execreport.getSide().equals("Buy") ? true : false);
 		curve.setPrice(_execreport.getAvgPx());
+		curve.setCurveprice(_execreport.getAvgPx());
 		
 		_curveorder.setExecleg(curve);
 		
